@@ -1,0 +1,58 @@
+---
+resources:
+  - name: git-repository
+    type: git
+    source:
+      uri: "https://github.com/lisilinhart/rails-testing-app"
+
+jobs:
+- name: capybara-test
+  plan:
+  - get: git-repository
+    trigger: true
+  - task: run-tests
+    config:
+      platform: linux
+
+      inputs:
+      - name: git-repository
+
+      image_resource:
+        type: docker-image
+        source: { repository: ruby, tag: 2.4.1 }
+
+      run:
+        path: sh
+        dir: git-repository
+        args:
+          - -exc
+          - |
+            apt-get update -qq && apt-get install -y build-essential nodejs
+            bundle install
+            rake
+
+- name: brakeman-test
+  plan:
+  - get: git-repository
+    passed: [capybara-test]
+    trigger: true
+  - task: run-tests
+    config:
+      platform: linux
+
+      inputs:
+      - name: git-repository
+
+      image_resource:
+        type: docker-image
+        source: { repository: ruby, tag: 2.4.1 }
+
+      run:
+        path: sh
+        dir: git-repository
+        args:
+          - -exc
+          - |
+            apt-get update -qq && apt-get install -y build-essential nodejs
+            bundle install
+            brakeman
